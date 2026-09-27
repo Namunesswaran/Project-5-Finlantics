@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id           String        @id @default(cuid())
+  name         String
+  createdAt    DateTime      @default(now())
+  users        User[]
+  transactions Transaction[]
+}
+
+model User {
+  id             String       @id @default(cuid())
+  name           String?
+  email          String       @unique
+  password       String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+}
+
+model Transaction {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  customerId     String
+  merchant       String
+  amount         Float
+  location       String
+  timestamp      DateTime
+  riskScore      Float        @default(0)
+  alert          Alert?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, customerId])
+  @@index([organizationId, timestamp])
+}
+
+model Alert {
+  id            String      @id @default(cuid())
+  transactionId String      @unique
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  riskScore     Float
+  reasons       String[]
+  explanation   String?
+  status        String      @default("open") // open | reviewed | false_positive | escalated
+  createdAt     DateTime    @default(now())
+}
